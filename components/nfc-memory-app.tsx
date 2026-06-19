@@ -308,8 +308,8 @@ export function NfcMemoryApp({ initialId, initialProfile }: NfcMemoryAppProps) {
           transition={{ duration: 0.9, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
         >
           <Image
-            src={campusSpots[0].imageUrl}
-            alt={campusSpots[0].imageAlt}
+            src="/images/campus/广西大学大门.jpeg"
+            alt="广西大学大门"
             fill
             sizes="(max-width: 768px) 100vw, 48vw"
             priority
