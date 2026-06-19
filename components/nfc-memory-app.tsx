@@ -590,7 +590,7 @@ export function NfcMemoryApp({ initialId, initialProfile }: NfcMemoryAppProps) {
                   </label>
                 ) : (
                   <label className="wide">
-                    <span>确认编辑密码</span>
+                    <span>请先输入编辑密码</span>
                     <input
                       type="password"
                       value={confirmPassword}
