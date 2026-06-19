@@ -1,4 +1,7 @@
 import { NfcMemoryApp } from "@/components/nfc-memory-app";
+import { getStudentPublicProfile } from "@/lib/student-service";
+
+export const dynamic = "force-dynamic";
 
 type HomeProps = {
   searchParams?: Promise<{
@@ -8,6 +11,8 @@ type HomeProps = {
 
 export default async function Home({ searchParams }: HomeProps) {
   const params = await searchParams;
-  return <NfcMemoryApp initialId={params?.id ?? "gxu-2026-lin-yu"} />;
-}
+  const publicId = params?.id ?? "gxu-2026-lin-yu";
+  const profile = await getStudentPublicProfile(publicId);
 
+  return <NfcMemoryApp initialId={publicId} initialProfile={profile} />;
+}

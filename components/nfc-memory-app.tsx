@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { type ChangeEvent, useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import {
   ArrowLeft,
@@ -16,47 +16,38 @@ import {
 } from "@phosphor-icons/react";
 import { AnimatePresence, motion, useReducedMotion } from "motion/react";
 import { campusOverview, campusSpots, schoolFacts } from "@/data/campus";
-import {
-  loadLocalProfile,
-  saveLocalPassword,
-  saveLocalProfile,
-  verifyLocalPassword
-} from "@/lib/profile-store";
-import type { EditableProfile, GraduatePhoto, GraduateProfile } from "@/lib/types";
+import type { EditableProfile, GraduateProfile } from "@/lib/types";
 
 type NfcMemoryAppProps = {
   initialId: string;
+  initialProfile?: GraduateProfile;
 };
 
 const MAX_PHOTOS = 5;
 
-export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
+export function NfcMemoryApp({ initialId, initialProfile }: NfcMemoryAppProps) {
   const reduceMotion = useReducedMotion();
-  const [profile, setProfile] = useState<GraduateProfile | undefined>();
+  const [profile, setProfile] = useState<GraduateProfile | undefined>(initialProfile);
   const [activePhoto, setActivePhoto] = useState(0);
   const [activeSpot, setActiveSpot] = useState(0);
   const [editorOpen, setEditorOpen] = useState(false);
-  const [draft, setDraft] = useState<EditableProfile | null>(null);
+  const [draft, setDraft] = useState<EditableProfile | null>(
+    initialProfile ? getEditableProfile(initialProfile) : null
+  );
   const [setupPassword, setSetupPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [savingProfile, setSavingProfile] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
   const [status, setStatus] = useState<{
     type: "idle" | "error" | "success";
     text: string;
   }>({ type: "idle", text: "" });
 
   useEffect(() => {
-    const loaded = loadLocalProfile(initialId);
-    setProfile(loaded);
-
-    if (loaded) {
-      setDraft({
-        name: loaded.name,
-        majorClass: loaded.majorClass,
-        signature: loaded.signature,
-        photos: loaded.photos
-      });
-    }
-  }, [initialId]);
+    setProfile(initialProfile);
+    setDraft(initialProfile ? getEditableProfile(initialProfile) : null);
+    setActivePhoto(0);
+  }, [initialId, initialProfile]);
 
   const activeImage = profile?.photos[activePhoto] ?? profile?.photos[0];
   const featuredSpot = campusSpots[activeSpot];
@@ -82,12 +73,7 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
       return;
     }
 
-    setDraft({
-      name: profile.name,
-      majorClass: profile.majorClass,
-      signature: profile.signature,
-      photos: profile.photos
-    });
+    setDraft(getEditableProfile(profile));
     setConfirmPassword("");
     setSetupPassword("");
     setStatus({ type: "idle", text: "" });
@@ -107,21 +93,65 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
     });
   }
 
-  function addPhoto() {
-    if (!canAddPhoto || !draft) {
+  async function uploadPhoto(file: File) {
+    if (!canAddPhoto || !draft || !profile) {
       setStatus({ type: "error", text: "照片最多保留 5 张。" });
       return;
     }
 
-    const photo: GraduatePhoto = {
-      url: `https://images.unsplash.com/photo-1523050854058-8df90110c9f1?auto=format&fit=crop&w=1200&q=82&sig=${draft.photos.length}`,
-      alt: "新增毕业照片占位"
-    };
+    const password = profile.passwordSet ? confirmPassword : setupPassword;
 
-    setDraft({
-      ...draft,
-      photos: [...draft.photos, photo]
-    });
+    if (!password.trim()) {
+      setStatus({ type: "error", text: "上传照片前请输入编辑密码。" });
+      return;
+    }
+
+    if (!profile.passwordSet && password.trim().length < 4) {
+      setStatus({ type: "error", text: "首次密码至少 4 位。" });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("password", password);
+
+    setUploadingPhoto(true);
+    setStatus({ type: "idle", text: "" });
+
+    try {
+      const response = await fetch(`/api/students/${encodeURIComponent(profile.publicId)}/photos`, {
+        method: "POST",
+        body: formData
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setStatus({ type: "error", text: payload.error ?? "照片上传失败。" });
+        return;
+      }
+
+      const nextProfile = payload.profile as GraduateProfile;
+      setProfile(nextProfile);
+      setDraft(getEditableProfile(nextProfile));
+      setActivePhoto(Math.max(0, nextProfile.photos.length - 1));
+
+      if (!profile.passwordSet) {
+        setConfirmPassword(password.trim());
+      }
+
+      setStatus({ type: "success", text: "照片已上传到 Supabase Storage。" });
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
+
+  function handlePhotoInputChange(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (file) {
+      void uploadPhoto(file);
+    }
   }
 
   function removePhoto(index: number) {
@@ -135,7 +165,7 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
     });
   }
 
-  function saveDraft() {
+  async function saveDraft() {
     if (!draft || !profile) {
       return;
     }
@@ -154,10 +184,6 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
         return;
       }
 
-      saveLocalPassword(profile.publicId, setupPassword.trim());
-    } else if (!verifyLocalPassword(profile.publicId, confirmPassword)) {
-      setStatus({ type: "error", text: "密码不正确，资料未保存。" });
-      return;
     }
 
     const nextDraft = {
@@ -168,16 +194,42 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
       photos: draft.photos.slice(0, MAX_PHOTOS)
     };
 
-    saveLocalProfile(profile.publicId, nextDraft);
-    const nextProfile = loadLocalProfile(profile.publicId);
-    setProfile(nextProfile);
-    setActivePhoto(0);
-    setStatus({ type: "success", text: "资料已保存到本地示例存储。" });
+    setSavingProfile(true);
+    setStatus({ type: "idle", text: "" });
 
-    window.setTimeout(() => {
-      setEditorOpen(false);
-      setStatus({ type: "idle", text: "" });
-    }, 650);
+    try {
+      const response = await fetch(`/api/students/${encodeURIComponent(profile.publicId)}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          password: profile.passwordSet ? confirmPassword : setupPassword,
+          profile: nextDraft
+        })
+      });
+      const payload = await response.json();
+
+      if (!response.ok) {
+        setStatus({ type: "error", text: payload.error ?? "资料保存失败。" });
+        return;
+      }
+
+      const nextProfile = payload.profile as GraduateProfile;
+      setProfile(nextProfile);
+      setDraft(getEditableProfile(nextProfile));
+      setActivePhoto(0);
+      setConfirmPassword("");
+      setSetupPassword("");
+      setStatus({ type: "success", text: "资料已保存到 Supabase。" });
+
+      window.setTimeout(() => {
+        setEditorOpen(false);
+        setStatus({ type: "idle", text: "" });
+      }, 650);
+    } finally {
+      setSavingProfile(false);
+    }
   }
 
   function showPreviousSpot() {
@@ -491,10 +543,22 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
                 <div className="wide photo-editor">
                   <div className="photo-editor-head">
                     <span>照片轮播</span>
-                    <button type="button" onClick={addPhoto} disabled={!canAddPhoto}>
+                    <label
+                      className={
+                        canAddPhoto && !uploadingPhoto
+                          ? "photo-upload-button"
+                          : "photo-upload-button disabled"
+                      }
+                    >
                       <Plus size={16} weight="bold" />
-                      添加占位图
-                    </button>
+                      {uploadingPhoto ? "上传中" : "上传照片"}
+                      <input
+                        type="file"
+                        accept="image/jpeg,image/png,image/webp"
+                        disabled={!canAddPhoto || uploadingPhoto}
+                        onChange={handlePhotoInputChange}
+                      />
+                    </label>
                   </div>
 
                   <div className="edit-photos">
@@ -512,7 +576,7 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
                     ))}
                   </div>
 
-                  <small>正式接入 Supabase 后，这里会改成真实上传。最多 5 张。</small>
+                  <small>照片会上传到 Supabase Storage。支持 JPG、PNG、WebP，最多 5 张。</small>
                 </div>
 
                 {!profile.passwordSet ? (
@@ -551,9 +615,14 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
                 <button className="ghost-button" type="button" onClick={() => setEditorOpen(false)}>
                   取消
                 </button>
-                <button className="save-button" type="button" onClick={saveDraft}>
+                <button
+                  className="save-button"
+                  type="button"
+                  onClick={saveDraft}
+                  disabled={savingProfile}
+                >
                   <LockKey size={18} weight="bold" />
-                  保存资料
+                  {savingProfile ? "保存中" : "保存资料"}
                 </button>
               </div>
             </motion.aside>
@@ -562,6 +631,15 @@ export function NfcMemoryApp({ initialId }: NfcMemoryAppProps) {
       </AnimatePresence>
     </main>
   );
+}
+
+function getEditableProfile(profile: GraduateProfile): EditableProfile {
+  return {
+    name: profile.name,
+    majorClass: profile.majorClass,
+    signature: profile.signature,
+    photos: profile.photos
+  };
 }
 
 function MissingProfile({ publicId }: { publicId: string }) {

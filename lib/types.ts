@@ -11,6 +11,8 @@ export type CampusSpot = {
 export type GraduatePhoto = {
   url: string;
   alt: string;
+  path?: string;
+  sort?: number;
 };
 
 export type GraduateProfile = {
@@ -26,4 +28,3 @@ export type EditableProfile = Pick<
   GraduateProfile,
   "name" | "majorClass" | "signature" | "photos"
 >;
-

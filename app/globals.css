@@ -776,7 +776,8 @@ blockquote {
   gap: 12px;
 }
 
-.photo-editor-head button {
+.photo-editor-head button,
+.photo-upload-button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -788,6 +789,16 @@ blockquote {
   border-radius: 999px;
   font-size: 13px;
   font-weight: 850;
+  cursor: pointer;
+}
+
+.photo-upload-button.disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.photo-upload-button input {
+  display: none;
 }
 
 .edit-photos {
