@@ -23,7 +23,7 @@ type NfcMemoryAppProps = {
   initialProfile?: GraduateProfile;
 };
 
-const MAX_PHOTOS = 5;
+const MAX_PHOTOS = 10;
 
 export function NfcMemoryApp({ initialId, initialProfile }: NfcMemoryAppProps) {
   const reduceMotion = useReducedMotion();
@@ -95,7 +95,7 @@ export function NfcMemoryApp({ initialId, initialProfile }: NfcMemoryAppProps) {
 
   async function uploadPhoto(file: File) {
     if (!canAddPhoto || !draft || !profile) {
-      setStatus({ type: "error", text: "照片最多保留 5 张。" });
+      setStatus({ type: "error", text: "照片最多保留 10 张。" });
       return;
     }
 
@@ -576,7 +576,7 @@ export function NfcMemoryApp({ initialId, initialProfile }: NfcMemoryAppProps) {
                     ))}
                   </div>
 
-                  <small>照片会上传到 Supabase Storage。支持 JPG、PNG、WebP，最多 5 张。</small>
+                  <small>照片会上传到 Supabase Storage。支持 JPG、PNG、WebP，最多 10 张。</small>
                 </div>
 
                 {!profile.passwordSet ? (

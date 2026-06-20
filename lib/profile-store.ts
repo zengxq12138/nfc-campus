@@ -43,7 +43,7 @@ export function saveLocalProfile(publicId: string, profile: EditableProfile) {
   const nextProfile: GraduateProfile = {
     ...existing,
     ...profile,
-    photos: profile.photos.slice(0, 5)
+    photos: profile.photos.slice(0, 10)
   };
 
   window.localStorage.setItem(
@@ -65,4 +65,3 @@ export function verifyLocalPassword(publicId: string, password: string) {
 
   return saved === password;
 }
-

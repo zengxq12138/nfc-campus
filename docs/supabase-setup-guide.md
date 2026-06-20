@@ -178,7 +178,7 @@ where public_id = 'gxu-2026-lin-yu';
 
 5. 替换照片上传
    - 前端选择真实文件
-   - 服务端限制文件类型、大小和最多 5 张
+   - 服务端限制文件类型、大小和最多 10 张
    - 上传到 `student-photos`
    - 写回 `students.photos`
 
@@ -196,7 +196,7 @@ where public_id = 'gxu-2026-lin-yu';
 - 密码错误时不能保存资料。
 - 密码正确时能更新姓名、专业班级、签名。
 - 上传图片后 Supabase Storage 有文件，`students.photos` 有对应 URL/path。
-- 最多只能保留 5 张照片。
+- 最多只能保留 10 张照片。
 - `SUPABASE_SERVICE_ROLE_KEY` 没有出现在浏览器 bundle、日志和提交内容中。
 
 ## 8. 官方参考

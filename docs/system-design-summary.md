@@ -20,7 +20,7 @@
   选择原因：Supabase 提供托管 PostgreSQL、Dashboard、SQL Editor、RLS 和自动 API，适合轻量项目快速上线，也保留后续扩展空间。
 
 - 文件存储：Supabase Storage  
-  选择原因：毕业生照片最多 5 张，体量小但需要公网展示和后续替换。照片路径写入数据库，文件本体放在 Storage bucket。
+  选择原因：毕业生照片最多 10 张，体量小但需要公网展示和后续替换。照片路径写入数据库，文件本体放在 Storage bucket。
 
 - 部署方式：Vercel + Supabase  
   选择原因：Vercel 对 Next.js 部署是零配置，能提供预览 URL、SSR、ISR 和自动扩缩。Supabase 可单独创建，也可通过 Vercel Marketplace 绑定。
@@ -91,7 +91,7 @@
 | `name` | `text` | 姓名 |
 | `major_class` | `text` | 专业班级 |
 | `signature` | `text` | 个性签名 |
-| `photos` | `jsonb` | 最多 5 张照片，存储路径、宽高、排序等 |
+| `photos` | `jsonb` | 最多 10 张照片，存储路径、宽高、排序等 |
 | `extra_fields` | `jsonb` | 后续字段扩展，例如毕业去向、标签 |
 | `password_hash` | `text null` | 编辑密码 hash，永不返回给客户端 |
 | `password_set_at` | `timestamptz null` | 密码设置时间 |
@@ -155,7 +155,7 @@
   用途：上传或替换照片。  
   请求方：照片上传组件。  
   响应结果：照片路径或错误信息。  
-  约束：最多 5 张；限制文件类型和大小；服务端校验密码。
+  约束：最多 10 张；限制文件类型和大小；服务端校验密码。
 
 ## 7. 关键技术难点与实现建议
 
@@ -207,7 +207,7 @@
   - 单个项目服务一个班级或小规模毕业生群体。
   - 毕业生资料查看公开，编辑需要密码。
   - `public_id` 由维护者预先生成并写入 NFC 标签。
-  - 照片最多 5 张，单张建议限制在 5MB 以内。
+  - 照片最多 10 张，单张建议限制在 5MB 以内。
   - 项目部署在 Vercel，数据库和 Storage 使用 Supabase。
 
 - 待确认：
@@ -222,4 +222,3 @@
 - Supabase Next.js 快速开始建议使用 `with-supabase` 模板，并强调 RLS、最小权限和环境变量配置：https://supabase.com/docs/guides/getting-started/quickstarts/nextjs
 - Vercel 官方文档说明 Next.js 部署到 Vercel 是零配置，并支持 SSR、ISR、预览 URL 等能力：https://vercel.com/docs/frameworks/full-stack/nextjs
 - Supabase Vercel Marketplace 文档说明 Vercel 与 Supabase 的组织、权限和限制关系：https://supabase.com/docs/guides/integrations/vercel-marketplace
-

@@ -6,7 +6,7 @@ import {
   studentPhotosBucket
 } from "@/lib/supabase-server";
 
-const maxPhotos = 5;
+const maxPhotos = 10;
 const maxPhotoSize = 5 * 1024 * 1024;
 const allowedPhotoTypes = new Map([
   ["image/jpeg", "jpg"],
@@ -118,7 +118,7 @@ export async function uploadStudentPhoto(
   const passwordHash = getVerifiedOrNewPasswordHash(row, password);
 
   if (photos.length >= maxPhotos) {
-    throw new StudentServiceError("photo_limit", "照片最多保留 5 张。");
+    throw new StudentServiceError("photo_limit", "照片最多保留 10 张。");
   }
 
   const extension = allowedPhotoTypes.get(file.type);
